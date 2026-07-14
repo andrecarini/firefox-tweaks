@@ -1,0 +1,69 @@
+/* userChrome.css
+ * Place in <profile>/chrome/userChrome.css
+ * Requires: toolkit.legacyUserProfileCustomizations.stylesheets = true  + restart.
+ * userChrome.css styles the browser UI only (web content is userContent.css).
+ */
+
+/* ── Hide tab bar + single-row titlebar (Firefox 152, Windows, Title Bar off) ──
+ *
+ * Every rule is gated on :root:not([uc-show-tabbar]) so the "Tab bar" toolbar
+ * button (defined in firefox.cfg) can toggle it PER WINDOW: no attribute =
+ * hidden (default); attribute present on that window = normal tab bar. Without
+ * firefox.cfg installed the attribute is never set, so the bar stays hidden.
+ *
+ * Tuning: Browser Toolbox (Ctrl+Shift+Alt+I) -> Inspector -> select #nav-bar and
+ * nudge the margins; copy final values back here.
+ */
+
+/* Collapse the tabs. The toolbar row stays, so the window min/max/close buttons
+ * and drag space are untouched - nothing to resurrect. */
+:root:not([uc-show-tabbar]) #tabbrowser-tabs { visibility: collapse !important; }
+
+/* Hide the widgets that would otherwise float in the emptied tab row.
+ * (Firefox View is intentionally NOT hidden - keep it wherever it's placed.) */
+:root:not([uc-show-tabbar]) :is(#alltabs-button, #TabsToolbar #new-tab-button) {
+  display: none !important;
+}
+
+/* Slide the nav-bar up into that row, kept clear of the caption buttons at the
+ * top-right. The extra margin-right past the caption buttons is a fixed drag
+ * strip for moving the window. */
+:root:not([uc-show-tabbar]) #nav-bar {
+  margin-top: -40px;
+  margin-right: 175px;
+  box-shadow: none !important;
+}
+
+/* Size the window caption buttons to the merged single-row height. */
+:root:not([uc-show-tabbar]) .titlebar-buttonbox { height: 40px !important; }
+
+/* Overflow fix: the pinned nav-bar items (all overflows="false") spill over the
+ * >>/menu buttons when space gets tight. Trim the fixed width Firefox gives
+ * #urlbar-container while the downloads/extensions buttons are shown. */
+:root:not([uc-show-tabbar]) #nav-bar:is([downloadsbuttonshown], [unifiedextensionsbuttonshown]) #urlbar-container {
+  width: calc(var(--urlbar-container-min-width) - 180px + 24px + 2 * var(--toolbarbutton-padding-inner)) !important;
+}
+
+/* Narrow windows only: shrink the caption buttons and reclaim reserved margin so
+ * the single row still fits. */
+@media (max-width: 700px) {
+  :root:not([uc-show-tabbar]) .titlebar-button { padding: 8px 8px !important; }
+  :root:not([uc-show-tabbar]) #nav-bar { margin-right: 100px; }
+}
+
+/* ── Sidebar header hiding ──────────────────────────────────────────────────
+ * Hidden by default; toggled per-window by the "Sidebar header" button
+ * (firefox.cfg) via the uc-show-sidebar-header attribute. Reclaims the vertical
+ * space the sidebar's title/switcher bar takes.
+ * Caveat: with the header hidden you lose the built-in way to switch sidebar
+ * panels, so make sure you have another way (keyboard shortcut, menu, or an
+ * extension button) to change panes. */
+:root:not([uc-show-sidebar-header]) #sidebar-header { display: none !important; }
+
+/* NOTE: the custom firefox.cfg toolbar-button icons (Performance, Layout) need no
+ * tinting here. They point at built-in chrome:// SVGs (performance.svg and
+ * columnpicker.svg), which are privileged same-origin images, so context-fill
+ * resolves to the themed toolbar colour via the built-in .toolbarbutton-1 rule —
+ * exactly like every native toolbar button. (An inline data: URL has an opaque
+ * origin, which disables context-fill and renders the icon black; that's why we
+ * don't embed the SVGs.) Nothing to do in userChrome.css. */

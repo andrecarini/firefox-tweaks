@@ -1,0 +1,45 @@
+/* userContent.css
+ *
+ * Place this next to your userChrome.css:  <profile>/chrome/userContent.css
+ * (If you already have a userContent.css, just add the @-moz-document block below.)
+ *
+ * Needs the same pref you already use for userChrome.css:
+ *   toolkit.legacyUserProfileCustomizations.stylesheets = true
+ * Restart Firefox after creating or editing this file.
+ *
+ * Why here and not userChrome.css: userChrome.css only styles the browser UI
+ * (browser.xhtml). about:home / about:newtab are CONTENT pages, reachable only
+ * from userContent.css.
+ */
+
+/* Firefox Home / New Tab.
+ *   about:home   -> home button and new windows
+ *   about:newtab -> new tabs
+ * Same underlying page, so scope to both. */
+@-moz-document url-prefix("about:home"), url-prefix("about:newtab") {
+
+  /* Hide the entire home app (React mount point). */
+  #root { display: none !important; }
+
+  /* Hide scrollbars and scroll corners on the home page.
+   * scrollbar-width is the dependable, standards-based way (Firefox 64+). */
+  :root { scrollbar-width: none !important; }
+
+  /* The literal XUL <scrollbar> / <scrollcorner> elements you named. These are
+   * native anonymous content, and whether a content sheet can match them varies
+   * across Firefox versions - so the scrollbar-width rule above is the reliable
+   * one and this is a belt-and-suspenders extra. */
+  scrollbar, scrollcorner { display: none !important; }
+
+  /* Prefer to keep the page but hide only SOME sections? Comment out the rule
+   * above, then copy any of the lines below out of this comment to activate it.
+   * These names are content markup and can change between Firefox versions -
+   * confirm them with F12 on a new tab (the Inspector works on about:newtab).
+   *
+   *   Search box:            .search-wrapper { display: none !important; }
+   *   Shortcuts (Top Sites): section[data-section-id="topsites"] { display: none !important; }
+   *   Recommended stories:   section[data-section-id="topstories"] { display: none !important; }
+   *   Firefox logo:          .logo-and-wordmark { display: none !important; }
+   *   Weather widget:        .weather { display: none !important; }
+   */
+}

@@ -1,0 +1,20 @@
+# Backups the installer leaves behind
+*.bak
+*.bak-*
+
+# Throwaway test profile, if one ever gets recreated in this folder
+fresh-profile/
+
+# Windows reserved device name that a Bash redirect can accidentally
+# materialize as a real file in the working directory
+NUL
+nul
+
+# OS and editor cruft
+.DS_Store
+Thumbs.db
+desktop.ini
+*~
+*.swp
+.vscode/
+.idea/
