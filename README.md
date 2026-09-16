@@ -31,6 +31,10 @@ Useful flags: `--dry-run` (show the plan, change nothing), `--no-css` (skip the 
 
 `firefox.cfg` runs with full browser privileges, because `autoconfig.js` sets `general.config.sandbox_enabled = false`. That's what lets it add the buttons, but it also means the file can do anything Firefox can. Read it before installing, and only run AutoConfig code you trust.
 
+## Also in this repo
+
+`search-icons/` is a separate, self-contained set of Perl scripts for changing the icon on a search engine added from an OpenSearch descriptor, which Firefox has no UI for, and for stopping Firefox refreshing that icon back to the original later. It shares nothing with the files above beyond being Firefox and being Perl. See `search-icons/README.md`.
+
 ## License
 
 MIT.
