@@ -8,8 +8,8 @@
 #   Profile (no admin):
 #     userChrome.css  -> <profile>/chrome/userChrome.css
 #     userContent.css -> <profile>/chrome/userContent.css
-#   Also ensures the profile enables custom stylesheets
-#     (toolkit.legacyUserProfileCustomizations.stylesheets = true via user.js).
+#   Also ensures the profile's user.js sets the prefs in @PREFS (custom
+#     stylesheets enabled, scrollbar width, no scrollbar arrow buttons).
 #
 # Cross-platform: Windows (native or Git-for-Windows perl) and Linux.
 # Finds the install dir and active profile, asks for elevation only when the
@@ -56,8 +56,20 @@ if ($IS_WIN && ($ENV{SystemRoot} || $ENV{WINDIR})) {
     $PWSH = "$sr/System32/WindowsPowerShell/v1.0/powershell.exe";
 }
 
-my $PREF_KEY  = 'toolkit.legacyUserProfileCustomizations.stylesheets';
-my $PREF_LINE = qq{user_pref("$PREF_KEY", true);};
+# THE list of prefs ensured in the profile's user.js — to add or remove one,
+# edit only this table. value = the JS literal written into user_pref().
+# Missing prefs are appended; a pref already set in user.js is left alone (with
+# a warning if its value differs), so hand edits there are never overwritten.
+my @PREFS = (
+    { key => 'toolkit.legacyUserProfileCustomizations.stylesheets', value => 'true',
+      why => 'enables userChrome.css / userContent.css' },
+    { key => 'widget.non-native-theme.win.scrollbar.use-system-size', value => 'false',
+      why => 'stop the Windows system size from overriding the size below' },
+    { key => 'widget.non-native-theme.scrollbar.size.override', value => '12',
+      why => 'scrollbar width in px (scrollbar-width: thin is always half of this)' },
+    { key => 'ui.scrollArrowStyle', value => '0',
+      why => 'no arrow buttons at the ends of scrollbars' },
+);
 
 my %opt;
 GetOptions(\%opt,
@@ -402,21 +414,33 @@ sub run_batch_linux {
 sub shq { my ($s) = @_; $s =~ s/'/'\\''/g; return "'$s'" }
 
 # ===========================================================================
-#  Ensure the profile enables custom stylesheets via user.js
+#  Ensure the profile's user.js sets every pref in @PREFS
 # ===========================================================================
-sub ensure_stylesheets_pref {
+sub ensure_prefs {
     my ($profile) = @_;
     my $uj = $IS_WIN ? win_join($profile, 'user.js') : "$profile/user.js";
     my $existing = read_text($uj);
-    if ($existing =~ /\Q$PREF_KEY\E/) {
-        info("user.js already enables custom stylesheets — leaving it alone.");
-        return;
+    my @missing;
+    for my $p (@PREFS) {
+        # Only a live (uncommented) user_pref line counts as already set.
+        if ($existing =~ /^\s*user_pref\(\s*["']\Q$p->{key}\E["']\s*,\s*(.*?)\s*\)\s*;/m) {
+            my $cur = $1;
+            if ($cur eq $p->{value}) {
+                info("user.js already sets $p->{key} = $p->{value}.");
+            } else {
+                info("user.js sets $p->{key} = $cur (this setup uses $p->{value}) — leaving it alone.");
+            }
+            next;
+        }
+        push @missing, $p;
     }
+    return unless @missing;
     if ($opt{'dry-run'}) {
-        print "    (dry-run) would add '$PREF_KEY = true' to user.js\n";
+        print "    (dry-run) would add '$_->{key} = $_->{value}' to user.js\n" for @missing;
         return;
     }
-    my $add = "\n// added by install.pl on $STAMP - enables userChrome.css / userContent.css\n$PREF_LINE\n";
+    my $add = "\n// added by install.pl on $STAMP\n"
+            . join('', map { qq{user_pref("$_->{key}", $_->{value}); // $_->{why}\n} } @missing);
     if ($IS_WIN) {
         my $q = ps_sq($uj);
         # Pass the text as base64 and write with explicit UTF-8 (no BOM) so we
@@ -441,7 +465,8 @@ sub ensure_stylesheets_pref {
         open my $fh, '>>:raw', $uj or die "Cannot write $uj: $!\n";
         print $fh encode('UTF-8', $add); close $fh;
     }
-    info("Enabled custom stylesheets in user.js (backup kept if it existed).");
+    info("Added to user.js: " . join(', ', map { $_->{key} } @missing)
+       . " (backup kept if it existed).");
 }
 
 # ===========================================================================
@@ -471,7 +496,8 @@ print "  Install-dir files" . ($need_elevate ? "  (needs admin/root)" : "") . ":
     . join('', map { "    $_->{src}\n      -> $_->{dst}\n" } @install_ops) if @install_ops;
 print "  Profile files:\n"
     . join('', map { "    $_->{src}\n      -> $_->{dst}\n" } @profile_ops) if @profile_ops;
-print "  Ensure $PREF_KEY = true in the profile's user.js\n" if @profile_ops;
+print "  Ensure these prefs in the profile's user.js:\n"
+    . join('', map { "    $_->{key} = $_->{value}\n" } @PREFS) if @profile_ops;
 print "  Existing files are backed up as <file>.bak-$STAMP\n\n";
 
 unless ($opt{'dry-run'} || $opt{yes}) {
@@ -483,7 +509,7 @@ unless ($opt{'dry-run'} || $opt{yes}) {
 if (@profile_ops) {
     info("Installing profile files...");
     run_batch(\@profile_ops, 0);
-    ensure_stylesheets_pref($PROFILE);
+    ensure_prefs($PROFILE);
 }
 if (@install_ops) {
     info("Installing install-dir files" . ($need_elevate ? " (you'll be asked to elevate)..." : "..."));

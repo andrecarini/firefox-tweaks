@@ -58,7 +58,52 @@
  * Caveat: with the header hidden you lose the built-in way to switch sidebar
  * panels, so make sure you have another way (keyboard shortcut, menu, or an
  * extension button) to change panes. */
-:root:not([uc-show-sidebar-header]) #sidebar-header { display: none !important; }
+:root:not([uc-show-sidebar-header]) #sidebar-panel-header { display: none !important; }
+
+/* ── Sidebar chrome cleanup ─────────────────────────────────────────────────
+ * The sidebar revamp wraps the panel in padding, a rounded corner and a
+ * visible splitter. Flatten it so the panel sits flush against the content.
+ * Zeroing the splitter's width only removes the visible gap; drag-resizing
+ * the sidebar still works. */
+#sidebar-box {
+  padding-inline-start: unset !important;
+  padding-block-end: unset !important;
+}
+#sidebar-splitter { width: 0 !important; }
+#sidebar { border-radius: 0 !important; }
+
+/* ── Search bar suggestions panel ───────────────────────────────────────────
+ * The dropdown under the separate search box (not the address bar). Square,
+ * flat rows, tighter spacing, thin scrollbar. Everything is scoped to the
+ * panel's id so the shared autocomplete classes elsewhere are left alone.
+ * Applied by default; the "Default search panel" item in the Layout menu
+ * (firefox.cfg) sets uc-stock-search-panel to turn it all off per window.
+ * Inspect it with Browser Toolbox -> ... menu -> Disable Popup Auto-Hide. */
+:root:not([uc-stock-search-panel]) #PopupSearchAutoComplete {
+  /* The panel's content slot (shadow root, part="content") is padded with
+   * var(--panel-subview-body-padding), stock "8px 0". ::part() didn't take,
+   * so override the variable, which inherits into the shadow root: same top,
+   * no bottom. Shorthand, so the 8px top is restated here. */
+  --panel-subview-body-padding: 8px 0 0 !important;
+
+  & .search-panel-header.search-panel-current-engine { margin-bottom: 0.5rem !important; }
+
+  & .autocomplete-richlistbox.search-panel-tree { scrollbar-width: thin !important; }
+
+  & > richlistbox > richlistitem[selected] { border-radius: 0 !important; }
+
+  /* Each row's .row-item lives in autocomplete-row-item's shadow root, out of
+   * reach of selectors. Its styles read CSS variables, which do inherit into
+   * the shadow root, so set those on the host instead: no hover background
+   * (:host(:hover) .row-item uses --button-background-color-hover) and square
+   * corners (.row-item uses --row-item-border-radius). */
+  & autocomplete-row-item {
+    --button-background-color-hover: transparent !important;
+    --row-item-border-radius: 0 !important;
+  }
+
+  & .search-panel-one-offs-header { margin: 0.5rem 0 !important; }
+}
 
 /* NOTE: the custom firefox.cfg toolbar-button icons (Performance, Layout) need no
  * tinting here. They point at built-in chrome:// SVGs (performance.svg and
