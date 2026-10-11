@@ -69,6 +69,8 @@ my @PREFS = (
       why => 'scrollbar width in px (scrollbar-width: thin is always half of this)' },
     { key => 'ui.scrollArrowStyle', value => '0',
       why => 'no arrow buttons at the ends of scrollbars' },
+    { key => 'browser.nova.enabled', value => 'false',
+      why => 'keep the "Nova" theme off (pill shapes, heavy padding/radius/contrast)' },
 );
 
 my %opt;
